@@ -1,0 +1,84 @@
+version: "3.8"
+
+services:
+  # Web Server
+  nginx:
+    build:
+      context: .
+      dockerfile: ./docker/nginx/Dockerfile
+    container_name: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - php
+      - mysql
+
+  # Database
+  mysql:
+    image: mysql:8
+    container_name: mysql
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: ldwtb
+      MYSQL_USER: dev
+      MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: secret
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      - app-network
+
+  php:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    container_name: php
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "9000:9000"
+    networks:
+      - app-network
+
+  composer:
+    build:
+      context: .
+      dockerfile: ./docker/composer/Dockerfile
+    container_name: composer
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    user: developer
+    entrypoint: ['composer', '--ignore-platform-reqs']
+    depends_on:
+      - php
+    networks:
+      - app-network
+
+  npm:
+    image: node:13.7.0-slim
+    container_name: npm
+    volumes:
+      - .:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ["npm"]
+
+  artisan:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    container_name: artisan
+    depends_on:
+      - mysql
+    working_dir: /var/www/html
+    entrypoint: ["php", "/var/www/html/artisan"]
+
+networks:
+  app-network:
