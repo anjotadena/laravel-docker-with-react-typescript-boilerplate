@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.3"
 
 services:
   # Web Server
@@ -48,22 +48,18 @@ services:
       - app-network
 
   composer:
-    build:
-      context: .
-      dockerfile: ./docker/composer/Dockerfile
+    image: composer:latest
     container_name: composer
     volumes:
       - .:/var/www/html
     working_dir: /var/www/html
-    user: developer
-    entrypoint: ['composer', '--ignore-platform-reqs']
     depends_on:
       - php
     networks:
       - app-network
 
   npm:
-    image: node:13.7.0-slim
+    image: node:13.7
     container_name: npm
     volumes:
       - .:/var/www/html
@@ -77,8 +73,13 @@ services:
     container_name: artisan
     depends_on:
       - mysql
+    volumes:
+      - .:/var/www/html
+    user: developer
     working_dir: /var/www/html
-    entrypoint: ["php", "/var/www/html/artisan"]
+    entrypoint: ["/var/www/html/artisan"]
+    networks:
+      - app-network
 
 networks:
   app-network:
